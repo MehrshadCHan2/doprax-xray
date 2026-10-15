@@ -1,0 +1,81 @@
+name: Convert Zirnevis model for the browser
+
+# Converts givia/whisper-large-v3-turbo-persian to ONNX with word-timestamp
+# outputs (cross-attentions) and uploads the browser-sized variants to
+# https://huggingface.co/mehrshadjavid/whisper-large-v3-turbo-persian-ONNX
+# Runs when zirnevis-web/model/ changes, or by hand from the Actions tab.
+
+on:
+  push:
+    branches: [main, claude/funny-noether-yicsky]
+    paths: ["zirnevis-web/model/**", ".github/workflows/zirnevis-model.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: zirnevis-model
+  cancel-in-progress: true
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      SOURCE: givia/whisper-large-v3-turbo-persian
+      TOKENIZER: openai/whisper-large-v3-turbo
+      TARGET: mehrshadjavid/whisper-large-v3-turbo-persian-ONNX
+      TJS_SCRIPTS: https://raw.githubusercontent.com/huggingface/transformers.js/3.7.6/scripts
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the transformers.js converter
+        run: |
+          mkdir -p work/scripts/extra && cd work/scripts
+          for f in convert.py quantize.py float16.py utils.py requirements.txt; do curl -sSfL -o $f "$TJS_SCRIPTS/$f"; done
+          curl -sSfL -o extra/whisper.py "$TJS_SCRIPTS/extra/whisper.py"
+          touch __init__.py extra/__init__.py
+          pip install -q torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -q -r requirements.txt huggingface_hub
+
+      - name: Convert (with cross-attentions for word timestamps)
+        working-directory: work
+        # The fine-tune's tokenizer files were saved by a newer library; the
+        # vocabulary is identical to the original turbo model's.
+        run: >
+          python -m scripts.convert --model_id "$SOURCE" --tokenizer_id "$TOKENIZER"
+          --task automatic-speech-recognition-with-past --output_attentions --skip_validation
+          --quantize --modes q8 q4f16
+
+      - name: Upload to Hugging Face
+        working-directory: work
+        run: |
+          python - <<'EOF'
+          import glob, os, shutil
+          from huggingface_hub import HfApi
+
+          out = f"models/{os.environ['SOURCE']}"
+          keep = {
+              "encoder_model_q4f16.onnx", "decoder_model_merged_q4f16.onnx",       # WebGPU
+              "encoder_model_quantized.onnx", "decoder_model_merged_quantized.onnx",  # WebAssembly
+          }
+          for f in glob.glob(f"{out}/onnx/*"):
+              if os.path.basename(f) not in keep:
+                  os.remove(f)
+          shutil.copy("../zirnevis-web/model/README.md", f"{out}/README.md")
+          print(sorted(os.listdir(out)), sorted(os.listdir(f"{out}/onnx")))
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.create_repo(os.environ["TARGET"], repo_type="model", exist_ok=True)
+          api.upload_folder(repo_id=os.environ["TARGET"], repo_type="model", folder_path=out,
+                            commit_message=f"Convert {os.environ['SOURCE']} ({os.environ['GITHUB_SHA'][:7]})")
+          print("uploaded https://huggingface.co/" + os.environ["TARGET"])
+          EOF
