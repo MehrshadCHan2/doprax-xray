@@ -70,10 +70,11 @@ class Transcriber:
             # model invent text for the silence after it.
             seg = next(iter(segments), None)
             if seg is not None and not _drop_segment(seg):
-                for w in seg.words or []:
-                    text = w.word.strip()
-                    if text and not is_stutter(text):
-                        words.append(Word(w.start + offset, w.end + offset, text, w.probability))
+                piece = [
+                    Word(w.start + offset, w.end + offset, w.word.strip(), w.probability)
+                    for w in seg.words or []
+                ]
+                words.extend(fix_words(piece))
             done += b - a
             if progress:
                 progress(done / total)
@@ -104,6 +105,31 @@ def plan_chunks(audio: np.ndarray, max_len: float = MAX_CHUNK, max_gap: float = 
         else:
             chunks.append([r["start"], r["end"]])
     return [(a, b) for a, b in chunks]
+
+
+def max_word_seconds(text: str) -> float:
+    return max(1.0, 0.1 * len(text) + 0.5)
+
+
+def fix_words(words: list[Word]) -> list[Word]:
+    """Remove noise fragments and repair words stretched over silence."""
+    out: list[Word] = []
+    for w in words:
+        if not w.text or is_stutter(w.text):
+            continue
+        if w.prob < 0.05 and len(w.text) <= 2:
+            continue  # a letter the model was guessing at in noise
+        limit = max_word_seconds(w.text)
+        if w.end - w.start > limit:
+            # The alignment stretches a word over the pause next to it. After a
+            # pause (or at the start) the start is wrong; otherwise the end is.
+            after_pause = not out or w.start - out[-1].end > 0.3
+            if after_pause:
+                w = Word(w.end - limit, w.end, w.text, w.prob)
+            else:
+                w = Word(w.start, w.start + limit, w.text, w.prob)
+        out.append(w)
+    return out
 
 
 def _drop_segment(seg) -> bool:

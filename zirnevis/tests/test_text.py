@@ -59,3 +59,17 @@ def test_junk_and_stutter():
     assert is_stutter("میدیدیدیدید")
     assert not is_stutter("دیدید")
     assert not is_stutter("می‌خواهم")
+
+
+def test_fix_words_trims_stretched_and_noise_words():
+    from zirnevis.asr import fix_words
+
+    out = fix_words([
+        Word(110.61, 110.77, "م", 0.0),
+        Word(110.77, 118.95, "آیین", 0.7),
+        Word(118.95, 119.47, "بودایی", 0.99),
+        Word(119.47, 125.0, "تبتی", 0.9),
+    ])
+    assert [w.text for w in out] == ["آیین", "بودایی", "تبتی"]
+    assert out[0].end == 118.95 and out[0].end - out[0].start <= 1.0 + 1e-9
+    assert out[2].start == 119.47 and out[2].end - out[2].start <= 1.0 + 1e-9
