@@ -69,9 +69,94 @@ function splitLong(audio, [a, b], maxLen) {
   return [[a, cut], ...splitLong(audio, [cut, b], maxLen)];
 }
 
-/** Speech grouped into pieces of at most `maxLen` seconds, cut at pauses. */
-export function planPieces(audio, maxLen = MAX_PIECE, maxGap = 2.0) {
-  const regions = speechRegions(audio).flatMap((r) => splitLong(audio, r, maxLen));
+/**
+ * Even out loud and quiet parts (like ffmpeg's dynaudnorm) so a speech
+ * detector also hears soft speech. Only used for detection, never for the
+ * recognizer itself.
+ */
+export function levelAudio(audio, { frame = 0.15, maxGain = 10, radius = 7 } = {}) {
+  const n = Math.max(1, Math.round(frame * SAMPLE_RATE));
+  const frames = Math.ceil(audio.length / n);
+  const gains = new Float32Array(frames);
+  for (let f = 0; f < frames; f++) {
+    let peak = 0;
+    for (let i = f * n; i < Math.min(audio.length, (f + 1) * n); i++) peak = Math.max(peak, Math.abs(audio[i]));
+    gains[f] = Math.min(maxGain, 0.95 / Math.max(peak, 1e-6));
+  }
+  // Minimum filter (never over-amplify next to a loud frame), then Gaussian smoothing.
+  const minF = gains.map((_, f) => {
+    let m = Infinity;
+    for (let k = Math.max(0, f - radius); k <= Math.min(frames - 1, f + radius); k++) m = Math.min(m, gains[k]);
+    return m;
+  });
+  const sigma = radius / 2;
+  const smooth = minF.map((_, f) => {
+    let sum = 0, wsum = 0;
+    for (let k = Math.max(0, f - radius); k <= Math.min(frames - 1, f + radius); k++) {
+      const w = Math.exp(-((k - f) ** 2) / (2 * sigma * sigma));
+      sum += w * minF[k]; wsum += w;
+    }
+    return sum / wsum;
+  });
+  const out = new Float32Array(audio.length);
+  for (let i = 0; i < audio.length; i++) {
+    const pos = i / n - 0.5, f = Math.max(0, Math.floor(pos)), t = Math.min(1, Math.max(0, pos - f));
+    const g = smooth[f] * (1 - t) + smooth[Math.min(frames - 1, f + 1)] * t;
+    out[i] = Math.max(-1, Math.min(1, audio[i] * g));
+  }
+  return out;
+}
+
+export const SILERO_WINDOW = 512;
+
+/** Speech probability for every 32 ms window, from a Silero VAD `runWindow(Float32Array) → p`. */
+export async function speechProbs(audio, runWindow) {
+  const probs = [];
+  for (let i = 0; i < audio.length; i += SILERO_WINDOW) {
+    const w = new Float32Array(SILERO_WINDOW);
+    w.set(audio.subarray(i, i + SILERO_WINDOW));
+    probs.push(await runWindow(w));
+  }
+  return probs;
+}
+
+/** Silero probabilities → speech regions, with the same rules as faster-whisper. */
+export function regionsFromProbs(probs, length, {
+  threshold = 0.5, minSilence = 0.5, pad = 0.4, minSpeech = 0.25,
+} = {}) {
+  const W = SILERO_WINDOW, neg = threshold - 0.15;
+  const minSilenceS = minSilence * SAMPLE_RATE, minSpeechS = minSpeech * SAMPLE_RATE, padS = pad * SAMPLE_RATE;
+  const speeches = [];
+  let start = -1, tempEnd = 0;
+  probs.forEach((p, i) => {
+    if (p >= threshold && tempEnd) tempEnd = 0;
+    if (p >= threshold && start < 0) { start = W * i; return; }
+    if (p < neg && start >= 0) {
+      if (!tempEnd) tempEnd = W * i;
+      if (W * i - tempEnd < minSilenceS) return;
+      if (tempEnd - start > minSpeechS) speeches.push([start, tempEnd]);
+      start = -1; tempEnd = 0;
+    }
+  });
+  if (start >= 0 && length - start > minSpeechS) speeches.push([start, length]);
+  speeches.forEach((s, i) => {
+    if (i === 0) s[0] = Math.max(0, s[0] - padS);
+    const next = speeches[i + 1];
+    if (next) {
+      const gap = next[0] - s[1];
+      if (gap < 2 * padS) { s[1] += Math.floor(gap / 2); next[0] = Math.max(0, next[0] - Math.floor(gap / 2)); }
+      else { s[1] = Math.min(length, s[1] + padS); next[0] = Math.max(0, next[0] - padS); }
+    } else s[1] = Math.min(length, s[1] + padS);
+  });
+  return speeches;
+}
+
+/**
+ * Speech grouped into pieces of at most `maxLen` seconds, cut at pauses.
+ * `regions` come from Silero when available; otherwise a loudness detector is used.
+ */
+export function planPieces(audio, maxLen = MAX_PIECE, maxGap = 2.0, regions = null) {
+  regions = (regions ?? speechRegions(audio)).flatMap((r) => splitLong(audio, r, maxLen));
   const pieces = [];
   for (const [a, b] of regions) {
     const prev = pieces.at(-1);

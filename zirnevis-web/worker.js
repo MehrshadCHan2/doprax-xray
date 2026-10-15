@@ -1,15 +1,18 @@
 // Runs the Persian speech model in the browser (WebGPU, or WebAssembly as a
 // fallback) so the page never freezes. Audio never leaves the device.
 import {
+  AutoModel,
   AutoProcessor,
   AutoTokenizer,
+  Tensor,
   WhisperForConditionalGeneration,
   env,
 } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0";
 
-import { transcribe } from "./lib/transcribe.js";
+import { sileroRunner, transcribe } from "./lib/transcribe.js";
 
 const MODEL_ID = "mehrshadjavid/whisper-large-v3-turbo-persian-ONNX";
+const VAD_ID = "onnx-community/silero-vad"; // 2 MB speech detector
 
 // Smallest files that keep accuracy: 4-bit weights on the GPU, 8-bit on the CPU.
 const DTYPES = {
@@ -39,12 +42,16 @@ async function load(forced, localModel) {
     id = localModel;
   }
   const progress_callback = (p) => postMessage({ type: "download", ...p });
-  const [tokenizer, processor, model] = await Promise.all([
+  const [tokenizer, processor, model, vad] = await Promise.all([
     AutoTokenizer.from_pretrained(id, { progress_callback }),
     AutoProcessor.from_pretrained(id, { progress_callback }),
     WhisperForConditionalGeneration.from_pretrained(id, { dtype: DTYPES[device], device, progress_callback }),
+    // Tiny and called thousands of times: always on the CPU.
+    AutoModel.from_pretrained(localModel ? "silero-vad" : VAD_ID, {
+      config: { model_type: "custom" }, dtype: "fp32", device: "wasm", progress_callback,
+    }),
   ]);
-  parts = { model, processor, tokenizer };
+  parts = { model, processor, tokenizer, makeVad: () => sileroRunner(vad, Tensor) };
   postMessage({ type: "ready", device });
 }
 
