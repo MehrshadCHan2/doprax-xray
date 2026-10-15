@@ -24,7 +24,8 @@ this repository only changes the file format.
 
 - Exported to ONNX with `output_attentions=True`, so the decoder exposes the `cross_attentions.*` outputs that
   Transformers.js needs for word-level timestamps.
-- Quantized: `q4f16` (WebGPU) and `q8` (WebAssembly). Weights are otherwise unchanged.
+- Quantized: `q4f16` (WebGPU with `shader-f16`), `q4` (WebGPU without f16) and `q8` (WebAssembly).
+  Weights are otherwise unchanged.
 - Tokenizer files come from `openai/whisper-large-v3-turbo` (same vocabulary; the source's files use a newer format).
 
 Used by the [Zirnevis](https://huggingface.co/spaces/mehrshadjavid/zirnevis) Persian subtitle app.

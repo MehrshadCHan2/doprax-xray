@@ -1,7 +1,7 @@
 name: Convert Zirnevis model for the browser
 
 # Converts givia/whisper-large-v3-turbo-persian to ONNX with word-timestamp
-# outputs (cross-attentions) and uploads the browser-sized variants to
+# outputs (cross-attentions) and uploads the browser-sized variants (q4f16, q4, q8) to
 # https://huggingface.co/mehrshadjavid/whisper-large-v3-turbo-persian-ONNX
 # Runs when zirnevis-web/model/ changes, or by hand from the Actions tab.
 
@@ -53,7 +53,7 @@ jobs:
         run: >
           python -m scripts.convert --model_id "$SOURCE" --tokenizer_id "$TOKENIZER"
           --task automatic-speech-recognition-with-past --output_attentions --skip_validation
-          --quantize --modes q8 q4f16
+          --quantize --modes q8 q4 q4f16
 
       - name: Upload to Hugging Face
         working-directory: work
@@ -68,7 +68,8 @@ jobs:
                     "added_tokens.json", "special_tokens_map.json", "normalizer.json"]:
               shutil.copy(hf_hub_download(os.environ["TOKENIZER"], f), f"{out}/{f}")
           keep = {
-              "encoder_model_q4f16.onnx", "decoder_model_merged_q4f16.onnx",       # WebGPU
+              "encoder_model_q4f16.onnx", "decoder_model_merged_q4f16.onnx",       # WebGPU with shader-f16
+              "encoder_model_q4.onnx", "decoder_model_merged_q4.onnx",             # WebGPU without f16
               "encoder_model_quantized.onnx", "decoder_model_merged_quantized.onnx",  # WebAssembly
           }
           for f in glob.glob(f"{out}/onnx/*"):
