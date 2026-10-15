@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>زیرنویس فارسی خودکار</title>
+  <meta name="description" content="ویدیو یا صدای خود را بدهید و زیرنویس فارسی دقیق و تمیز (SRT) بگیرید. رایگان؛ فایل شما از دستگاهتان خارج نمی‌شود.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" crossorigin>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>زیرنویس فارسی خودکار</h1>
+      <p class="lead">ویدیو یا صدای خود را بدهید و زیرنویس فارسی دقیق و تمیز بگیرید. رایگان.</p>
+      <p class="private">🔒 فایل شما از دستگاهتان خارج نمی‌شود؛ همه کار داخل مرورگر خودتان انجام می‌شود.</p>
+    </header>
+
+    <div id="warn" class="notice warn" hidden></div>
+
+    <section class="card" id="step-file">
+      <h2><span class="n">۱</span> فایل را انتخاب کنید</h2>
+      <label id="drop" class="drop" tabindex="0">
+        <input id="file" type="file" accept="video/*,audio/*,.mkv,.m4a,.opus" hidden>
+        <span class="drop-icon">⬆</span>
+        <span id="drop-text">ویدیو یا فایل صوتی را اینجا رها کنید یا بزنید تا انتخاب کنید</span>
+      </label>
+      <details class="settings">
+        <summary>تنظیمات (اختیاری)</summary>
+        <div class="row">
+          <span>شکل اعداد:</span>
+          <label><input type="radio" name="digits" value="fa" checked> فارسی (۱۲۳)</label>
+          <label><input type="radio" name="digits" value="en"> انگلیسی (123)</label>
+        </div>
+        <div class="row">
+          <label for="chars">حداکثر حرف در هر خط: <b id="chars-out">۴۲</b></label>
+          <input id="chars" type="range" min="30" max="50" value="42">
+        </div>
+        <div class="row">
+          <label><input id="bom" type="checkbox" checked> سازگاری با پخش‌کننده‌های قدیمی ویندوز</label>
+        </div>
+      </details>
+      <button id="go" class="primary" disabled>ساخت زیرنویس</button>
+      <div id="status" class="status" aria-live="polite"></div>
+      <div id="bar" class="bar" hidden><div></div></div>
+    </section>
+
+    <section class="card" id="step-result" hidden>
+      <h2><span class="n">۲</span> ببینید، اصلاح کنید، دانلود کنید</h2>
+      <video id="player" controls playsinline></video>
+      <div class="downloads">
+        <a id="dl-srt" class="primary button" download>دانلود SRT</a>
+        <a id="dl-vtt" class="button" download>VTT</a>
+        <a id="dl-txt" class="button" download>متن ساده</a>
+      </div>
+      <p class="hint">فایل <b>SRT</b> برای VLC، پریمیر، کپ‌کات و یوتیوب است. اگر کلمه‌ای اشتباه است، همین پایین درستش کنید؛ فایل‌ها خودکار به‌روز می‌شوند. روی زمان هر ردیف بزنید تا ویدیو به همان‌جا برود.</p>
+      <div class="table-wrap">
+        <table id="cues">
+          <thead><tr><th>#</th><th>زمان</th><th>متن</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      مدل تشخیص گفتار: <a href="https://huggingface.co/givia/whisper-large-v3-turbo-persian" target="_blank" rel="noopener">whisper-large-v3-turbo-persian</a>
+      (CC-BY-4.0) بر پایه Whisper از OpenAI · اجرا با <a href="https://huggingface.co/docs/transformers.js" target="_blank" rel="noopener">Transformers.js</a>
+    </footer>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

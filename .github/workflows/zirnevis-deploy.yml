@@ -1,13 +1,13 @@
 name: Deploy Zirnevis to Hugging Face
 
-# Publishes the zirnevis/ folder to the Hugging Face Space
+# Publishes the in-browser app (zirnevis-web/) as a free static Space:
 # https://huggingface.co/spaces/mehrshadjavid/zirnevis
 # Needs a repository secret HF_TOKEN (a Hugging Face token with "Write" access).
 
 on:
   push:
     branches: [main, claude/funny-noether-yicsky]
-    paths: ["zirnevis/**", ".github/workflows/zirnevis-deploy.yml"]
+    paths: ["zirnevis-web/**", "!zirnevis-web/model/**", ".github/workflows/zirnevis-deploy.yml"]
   workflow_dispatch:
 
 concurrency:
@@ -30,15 +30,17 @@ jobs:
             exit 1
           fi
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run the tests
+        working-directory: zirnevis-web
+        run: node --test tests/*.test.mjs
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Run the tests
-        working-directory: zirnevis
-        run: |
-          pip install -q pytest numpy
-          python -m pytest -q tests
 
       - name: Upload to the Space
         run: |
@@ -49,13 +51,13 @@ jobs:
 
           api = HfApi(token=os.environ["HF_TOKEN"])
           space = os.environ["SPACE_ID"]
-          api.create_repo(space, repo_type="space", space_sdk="docker", exist_ok=True)
+          api.create_repo(space, repo_type="space", space_sdk="static", exist_ok=True)
           api.upload_folder(
               repo_id=space,
               repo_type="space",
-              folder_path="zirnevis",
-              ignore_patterns=["tests/*", "**/__pycache__/*", ".pytest_cache/*", "models/*"],
-              delete_patterns=["*.py", "zirnevis/*", "scripts/*"],
+              folder_path="zirnevis-web",
+              ignore_patterns=["tests/*", "model/*", "package.json", "node_modules/*"],
+              delete_patterns=["*.js", "*.css", "*.html", "lib/*"],
               commit_message=f"Deploy {os.environ['GITHUB_SHA'][:7]} from GitHub",
           )
           print(f"Deployed: https://huggingface.co/spaces/{space}")
