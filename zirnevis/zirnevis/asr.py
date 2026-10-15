@@ -16,12 +16,17 @@ MAX_CHUNK = 24.0  # seconds of audio decoded at once (the model card suggests â‰
 
 def cpu_count() -> int:
     """CPUs this container may really use (cgroup quota), not the host's total."""
-    try:
-        quota, period = open("/sys/fs/cgroup/cpu.max").read().split()
-        if quota != "max":
-            return max(1, int(int(quota) / int(period)))
-    except (OSError, ValueError):
-        pass
+    limits = [
+        lambda: open("/sys/fs/cgroup/cpu.max").read().split(),  # cgroup v2
+        lambda: [open(f"/sys/fs/cgroup/cpu/cpu.cfs_{n}_us").read().strip() for n in ("quota", "period")],  # v1
+    ]
+    for read in limits:
+        try:
+            quota, period = read()
+            if quota not in ("max", "-1"):
+                return max(1, int(int(quota) / int(period)))
+        except (OSError, ValueError):
+            pass
     try:
         return max(1, len(os.sched_getaffinity(0)))
     except AttributeError:
