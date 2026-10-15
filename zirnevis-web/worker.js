@@ -38,7 +38,7 @@ async function load(forced, localModel) {
     // Testing only: ?localModel=<folder under ./models/> loads files served next to the page.
     env.allowLocalModels = true;
     env.allowRemoteModels = false;
-    env.localModelPath = new URL("./models/", self.location.href).href;
+    env.localModelPath = "/models/";
     id = localModel;
   }
   const progress_callback = (p) => postMessage({ type: "download", ...p });
