@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import tempfile
 import threading
 import time
@@ -36,6 +37,17 @@ def fa_num(value) -> str:
     return str(value).translate(str.maketrans("0123456789.", "۰۱۲۳۴۵۶۷۸۹٫"))
 
 
+KEEP_SECONDS = 3600  # uploads and results are deleted after an hour
+
+
+def _cleanup_old_results() -> None:
+    root = tempfile.gettempdir()
+    for name in os.listdir(root):
+        path = os.path.join(root, name)
+        if name.startswith("zirnevis-") and time.time() - os.path.getmtime(path) > KEEP_SECONDS:
+            shutil.rmtree(path, ignore_errors=True)
+
+
 def _stem(path: str) -> str:
     name = os.path.splitext(os.path.basename(path))[0]
     return re.sub(r"[^\w\-]+", "_", name).strip("_") or "subtitle"
@@ -66,6 +78,7 @@ def generate(file, digits_label, line_chars, bom, progress=gr.Progress()):
     if info["duration"] > MAX_MINUTES * 60:
         raise gr.Error(f"حداکثر طول فایل {MAX_MINUTES:g} دقیقه است. لطفا فایل کوتاه‌تری بفرستید.")
 
+    _cleanup_old_results()
     progress(0, desc="در حال آماده شدن…")
     model = get_model()
     started = time.time()
@@ -134,7 +147,7 @@ HEAD = (
     '<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">'
 )
 
-with gr.Blocks(title="زیرنویس فارسی خودکار") as demo:
+with gr.Blocks(title="زیرنویس فارسی خودکار", delete_cache=(KEEP_SECONDS, KEEP_SECONDS)) as demo:
     state = gr.State(None)
     gr.Markdown(
         "# زیرنویس فارسی خودکار\n"
@@ -176,7 +189,7 @@ with gr.Blocks(title="زیرنویس فارسی خودکار") as demo:
     )
     save = gr.Button("ذخیره تغییرات")
     gr.Markdown(
-        "<small>صدای شما فقط برای ساخت زیرنویس استفاده می‌شود و ذخیره نمی‌شود. "
+        "<small>فایل شما فقط برای ساخت زیرنویس استفاده می‌شود و حداکثر یک ساعت بعد پاک می‌شود. "
         "مدل تشخیص گفتار: [whisper-large-v3-turbo-persian](https://huggingface.co/givia/whisper-large-v3-turbo-persian) "
         "(CC-BY-4.0) بر پایه Whisper از OpenAI.</small>",
         rtl=True,
