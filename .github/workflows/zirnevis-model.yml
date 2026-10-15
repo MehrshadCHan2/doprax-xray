@@ -60,9 +60,13 @@ jobs:
         run: |
           python - <<'EOF'
           import glob, os, shutil
-          from huggingface_hub import HfApi
+          from huggingface_hub import HfApi, hf_hub_download
 
           out = f"models/{os.environ['SOURCE']}"
+          # The converter does not write tokenizer files when --tokenizer_id is used.
+          for f in ["tokenizer.json", "tokenizer_config.json", "vocab.json", "merges.txt",
+                    "added_tokens.json", "special_tokens_map.json", "normalizer.json"]:
+              shutil.copy(hf_hub_download(os.environ["TOKENIZER"], f), f"{out}/{f}")
           keep = {
               "encoder_model_q4f16.onnx", "decoder_model_merged_q4f16.onnx",       # WebGPU
               "encoder_model_quantized.onnx", "decoder_model_merged_quantized.onnx",  # WebAssembly
