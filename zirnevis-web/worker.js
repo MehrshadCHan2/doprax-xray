@@ -14,9 +14,11 @@ import { sileroRunner, transcribe } from "./lib/transcribe.js";
 const MODEL_ID = "mehrshadjavid/whisper-large-v3-turbo-persian-ONNX";
 const VAD_ID = "onnx-community/silero-vad"; // 2 MB speech detector
 
-// Smallest files that keep accuracy: 4-bit weights on the GPU, 8-bit on the CPU.
+// Smallest files that keep accuracy: 4-bit weights on the GPU (16-bit math
+// where the GPU supports it), 8-bit on the CPU.
 const DTYPES = {
-  webgpu: { encoder_model: "q4f16", decoder_model_merged: "q4f16" },
+  "webgpu-f16": { encoder_model: "q4f16", decoder_model_merged: "q4f16" },
+  webgpu: { encoder_model: "q4", decoder_model_merged: "q4" },
   wasm: { encoder_model: "q8", decoder_model_merged: "q8" },
 };
 
@@ -26,7 +28,8 @@ let parts, device;
 
 async function pickDevice() {
   try {
-    if (await navigator.gpu?.requestAdapter()) return "webgpu";
+    const adapter = await navigator.gpu?.requestAdapter();
+    if (adapter) return adapter.features.has("shader-f16") ? "webgpu-f16" : "webgpu";
   } catch {}
   return "wasm";
 }
@@ -45,7 +48,9 @@ async function load(forced, localModel) {
   const [tokenizer, processor, model, vad] = await Promise.all([
     AutoTokenizer.from_pretrained(id, { progress_callback }),
     AutoProcessor.from_pretrained(id, { progress_callback }),
-    WhisperForConditionalGeneration.from_pretrained(id, { dtype: DTYPES[device], device, progress_callback }),
+    WhisperForConditionalGeneration.from_pretrained(id, {
+      dtype: DTYPES[device], device: device.startsWith("webgpu") ? "webgpu" : "wasm", progress_callback,
+    }),
     // Tiny and called thousands of times: always on the CPU.
     AutoModel.from_pretrained(localModel ? "silero-vad" : VAD_ID, {
       config: { model_type: "custom" }, dtype: "fp32", device: "wasm", progress_callback,

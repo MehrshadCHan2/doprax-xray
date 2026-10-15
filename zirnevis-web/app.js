@@ -99,11 +99,15 @@ function startWorker(device) {
         state.ready = true;
         state.device = data.device;
         resolve();
-      } else if (data.type === "error") {
+      } else if (data.type === "error" && !state.ready) {
         reject(new Error(data.message));
-      } else state.onMessage?.(data);
+      } else state.onMessage?.(data); // after loading, errors go to the running job
     };
-    state.worker.onerror = (e) => reject(new Error(e.message || "worker failed"));
+    state.worker.onerror = (e) => {
+      const err = new Error(e.message || "worker failed");
+      if (!state.ready) reject(err);
+      else state.onMessage?.({ type: "error", message: err.message });
+    };
     const localModel = new URLSearchParams(location.search).get("localModel");
     state.worker.postMessage({ type: "load", device, localModel });
   });
@@ -159,7 +163,7 @@ ui.go.addEventListener("click", async () => {
     try {
       took = await runModel(audio.slice());
     } catch (err) {
-      if (state.device !== "webgpu") throw err;
+      if (!state.device?.startsWith("webgpu")) throw err;
       console.warn("WebGPU run failed, retrying on WebAssembly:", err);
       say("کارت گرافیک پاسخ نداد؛ با پردازنده ادامه می‌دهیم (کندتر)…");
       state.words = [];
