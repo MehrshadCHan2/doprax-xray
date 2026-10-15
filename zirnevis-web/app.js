@@ -115,8 +115,10 @@ function startWorker(device) {
 
 async function ensureModel() {
   if (state.ready) return;
+  // ?device=wasm forces the CPU path (for testing, or a GPU that misbehaves).
+  const forced = new URLSearchParams(location.search).get("device");
   try {
-    await startWorker();
+    await startWorker(forced === "wasm" ? "wasm" : undefined);
   } catch (err) {
     // Some GPUs fail to run the model; the CPU path always works.
     console.warn("WebGPU failed, falling back to WebAssembly:", err);
