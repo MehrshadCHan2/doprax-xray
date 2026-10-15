@@ -6,7 +6,7 @@ colorTo: blue
 sdk: static
 pinned: false
 license: mit
-short_description: Drop a clip, get clean Persian SRT subtitles. Free, in-browser.
+short_description: Clean Persian SRT subtitles for any clip, in-browser
 custom_headers:
   cross-origin-embedder-policy: require-corp
   cross-origin-opener-policy: same-origin
