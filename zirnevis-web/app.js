@@ -1,6 +1,6 @@
 // Page logic: pick a file, run the model in a worker, show/edit/download cues.
 import { cleanWords, faNum, normalizeChars } from "./lib/text.js";
-import { buildCues, cueText, rewrap } from "./lib/segment.js";
+import { buildCues, buildWordCues, cueText, rewrap } from "./lib/segment.js";
 import { formatTs, parseTs, toSrt, toText, toVtt } from "./lib/subtitles.js";
 import { SAMPLE_RATE } from "./lib/speech.js";
 
@@ -15,14 +15,22 @@ const ui = {
 const state = { file: null, words: [], cues: [], edited: false, worker: null, ready: false, busy: false, urls: [] };
 
 const settings = () => ({
+  mode: document.querySelector("input[name=mode]:checked").value,
   digits: document.querySelector("input[name=digits]:checked").value,
   style: { maxLineChars: Number(ui.chars.value) },
   bom: ui.bom.checked,
 });
 
-function say(html, kind = "") {
-  ui.status.className = "status" + (kind ? ` notice ${kind}` : "");
+/** Status line. `busy` makes it shimmer while something is running. */
+function say(html, kind = "", busy = false) {
+  ui.status.className = "status" + (kind ? ` notice ${kind}` : "") + (busy ? " busy" : "");
   ui.status.innerHTML = html;
+}
+
+// Letter wave on the brand name (Latin letters only; Persian would lose its joins).
+for (const el of document.querySelectorAll("[data-wave]")) {
+  el.innerHTML = [...el.textContent].map((ch, i) =>
+    `<span class="w${i === 0 ? " j" : ""}" style="--i:${i}" aria-hidden="true">${ch}</span>`).join("");
 }
 function progress(fraction) {
   ui.bar.hidden = fraction == null;
@@ -36,8 +44,8 @@ const mb = (bytes) => faNum(Math.round(bytes / 1e6));
   try { gpu = !!(await navigator.gpu?.requestAdapter()); } catch {}
   const phone = /Android|iPhone|iPad/i.test(navigator.userAgent);
   const notes = [];
-  if (!gpu) notes.push("مرورگر شما از <b>WebGPU</b> پشتیبانی نمی‌کند، پس ساخت زیرنویس کند خواهد بود. برای سرعت خوب از <b>Chrome یا Edge جدید روی کامپیوتر</b> استفاده کنید.");
-  if (phone) notes.push("بار اول حدود ۶۰۰ مگابایت مدل دانلود می‌شود؛ بهتر است با وای‌فای باشید.");
+  if (!gpu) notes.push("مرورگرت به کارت گرافیک دسترسی نداره، پس ساخت زیرنویس کند می‌شه. برای سرعت بهتر، <b>کروم یا اج جدید روی کامپیوتر</b> رو امتحان کن.");
+  if (phone) notes.push("بار اول حدود ۶۰۰ مگابایت دانلود می‌شه؛ بهتره با وای‌فای باشی.");
   if (notes.length) { ui.warn.innerHTML = notes.join("<br>"); ui.warn.hidden = false; }
 })();
 
@@ -68,7 +76,7 @@ async function decodeAudio(file) {
   try {
     buf = await ctx.decodeAudioData(data);
   } catch {
-    throw new Error("مرورگر نتوانست صدای این فایل را بخواند. فایل را به MP4 یا MP3 تبدیل کنید و دوباره امتحان کنید.");
+    throw new Error("مرورگر نتونست صدای این فایل رو بخونه. فایل رو به MP4 یا MP3 تبدیل کن و دوباره امتحان کن.");
   }
   if (buf.numberOfChannels === 1) return buf.getChannelData(0);
   const mono = new Float32Array(buf.length);
@@ -91,10 +99,10 @@ function startWorker(device) {
         files.set(data.file, data);
         const loaded = [...files.values()].reduce((s, f) => s + f.loaded, 0);
         const total = [...files.values()].reduce((s, f) => s + f.total, 0);
-        say(`در حال دانلود مدل (فقط بار اول، بعد ذخیره می‌شود): ${mb(loaded)} از ${mb(total)} مگابایت…`);
+        say(`داره هوش مصنوعی رو دانلود می‌کنه (فقط بار اول): ${mb(loaded)} از ${mb(total)} مگابایت…`, "", true);
         progress(loaded / total);
       } else if (data.type === "download" && data.status === "ready") {
-        say("در حال آماده کردن مدل…");
+        say("داره هوش مصنوعی رو آماده می‌کنه…", "", true);
       } else if (data.type === "ready") {
         state.ready = true;
         state.device = data.device;
@@ -122,7 +130,7 @@ async function ensureModel() {
   } catch (err) {
     // Some GPUs fail to run the model; the CPU path always works.
     console.warn("WebGPU failed, falling back to WebAssembly:", err);
-    say("کارت گرافیک پاسخ نداد؛ با پردازنده ادامه می‌دهیم (کندتر)…");
+    say("کارت گرافیک جواب نداد؛ با پردازنده ادامه می‌دیم (کندتره)…", "", true);
     await startWorker("wasm");
   }
 }
@@ -137,13 +145,13 @@ function runModel(audio) {
         refreshFromWords();
         const elapsed = (performance.now() - started) / 1000;
         const left = data.progress > 0.05 ? Math.round((elapsed / data.progress) * (1 - data.progress)) : null;
-        say(`در حال شنیدن و نوشتن… ${faNum(Math.round(data.progress * 100))}٪` + (left != null ? ` (حدود ${faNum(left)} ثانیه مانده)` : ""));
+        say(`داره گوش می‌ده و می‌نویسه… ${faNum(Math.round(data.progress * 100))}٪` + (left != null ? ` (حدود ${faNum(left)} ثانیه مونده)` : ""), "", true);
         progress(data.progress);
       } else if (data.type === "done") {
         resolve((performance.now() - started) / 1000);
       } else if (data.type === "error") reject(new Error(data.message));
     };
-    say(`در حال شنیدن و نوشتن… (${faNum(Math.round(seconds / 60 * 10) / 10)} دقیقه صدا)`);
+    say(`داره گوش می‌ده و می‌نویسه… (${faNum(Math.round(seconds / 60 * 10) / 10)} دقیقه صدا)`, "", true);
     progress(0);
     state.worker.postMessage({ type: "transcribe", audio }, [audio.buffer]);
   });
@@ -156,9 +164,9 @@ ui.go.addEventListener("click", async () => {
   state.words = [];
   state.edited = false;
   try {
-    say("در حال خواندن صدای فایل…");
+    say("داره صدای فایل رو می‌خونه…", "", true);
     const audio = await decodeAudio(state.file);
-    if (audio.length < SAMPLE_RATE / 2) throw new Error("این فایل صدای کافی ندارد.");
+    if (audio.length < SAMPLE_RATE / 2) throw new Error("این فایل صدای کافی نداره.");
     showPlayer();
     await ensureModel();
     let took;
@@ -167,14 +175,14 @@ ui.go.addEventListener("click", async () => {
     } catch (err) {
       if (!state.device?.startsWith("webgpu")) throw err;
       console.warn("WebGPU run failed, retrying on WebAssembly:", err);
-      say("کارت گرافیک پاسخ نداد؛ با پردازنده ادامه می‌دهیم (کندتر)…");
+      say("کارت گرافیک جواب نداد؛ با پردازنده ادامه می‌دیم (کندتره)…", "", true);
       state.words = [];
       await startWorker("wasm");
       took = await runModel(audio);
     }
     progress(null);
-    if (!state.cues.length) say("گفتار فارسی در این فایل پیدا نشد.", "warn");
-    else say(`✅ آماده است: ${faNum(state.cues.length)} زیرنویس در ${faNum(Math.round(took))} ثانیه. حالا می‌توانید ببینید، اصلاح کنید و دانلود کنید.`);
+    if (!state.cues.length) say("توی این فایل حرف فارسی پیدا نشد.", "warn");
+    else say(`✅ آماده‌ست! ${faNum(state.cues.length)} زیرنویس در ${faNum(Math.round(took))} ثانیه. حالا ببین، اگه لازمه درستش کن و دانلودش کن.`);
   } catch (err) {
     progress(null);
     say(`⚠️ ${err.message}`, "error");
@@ -198,9 +206,10 @@ function showPlayer() {
 }
 
 function refreshFromWords() {
-  const { digits, style } = settings();
+  const { digits, style, mode } = settings();
   const words = cleanWords(state.words, digits);
-  state.cues = buildCues(words, style).map((c) => ({ start: c.start, end: c.end, text: cueText(c) }));
+  const cues = mode === "words" ? buildWordCues(words) : buildCues(words, style);
+  state.cues = cues.map((c) => ({ start: c.start, end: c.end, text: cueText(c) }));
   renderTable();
   refreshOutputs();
 }
@@ -271,6 +280,17 @@ ui.player.addEventListener("timeupdate", () => {
 });
 
 // --- settings ---------------------------------------------------------------
+for (const r of document.querySelectorAll("input[name=mode]")) {
+  r.addEventListener("change", () => {
+    if (!state.words.length) return;
+    if (state.edited && !confirm("با عوض کردن سبک، ویرایش‌هایی که کردی پاک می‌شن. ادامه می‌دی؟")) {
+      document.querySelector(`input[name=mode][value=${r.value === "words" ? "lines" : "words"}]`).checked = true;
+      return;
+    }
+    state.edited = false;
+    refreshFromWords();
+  });
+}
 ui.chars.addEventListener("input", () => { ui.charsOut.textContent = faNum(ui.chars.value); refreshOutputs(); });
 ui.bom.addEventListener("change", refreshOutputs);
 for (const r of document.querySelectorAll("input[name=digits]")) {

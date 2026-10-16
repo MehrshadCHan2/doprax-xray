@@ -121,3 +121,18 @@ export function buildCues(words, s, duration = null) {
 export function rewrap(cues, s) {
   return cues.filter((c) => cueText(c).trim()).map((c) => ({ start: c.start, end: c.end, lines: wrap(cueText(c), s) }));
 }
+
+/**
+ * One cue per word, for Reels/Shorts-style captions. Each word stays up at
+ * least `minWord` seconds when the next word leaves room, and never overlaps it.
+ */
+export function buildWordCues(words, { minWord = 0.3, gap = 0.02, linger = 0.15 } = {}, duration = null) {
+  return words.map((w, i) => {
+    const next = words[i + 1];
+    const limit = next ? next.start - gap : (duration ?? Infinity);
+    const want = Math.max(w.end + (next ? 0 : linger), w.start + minWord);
+    const start = Math.max(0, w.start);
+    const end = Math.max(start + 0.05, Math.min(want, limit));
+    return { start, end, lines: [tidyLine(w.text)] };
+  });
+}

@@ -154,3 +154,18 @@ test("planPieces finds speech, skips silence, respects max length", () => {
   const covered = pieces.filter(([a, b]) => b > 20 && a < 60).reduce((s, [a, b]) => s + Math.min(b, 60) - Math.max(a, 20), 0);
   assert.ok(covered > 39, "long speech fully covered");
 });
+
+test("word-by-word cues: one word each, no overlap, readable length", async () => {
+  const { buildWordCues } = await import("../lib/segment.js");
+  const ws = [
+    { start: 0.0, end: 0.1, text: "سلام" },
+    { start: 0.12, end: 0.5, text: "خوبی؟" },
+    { start: 2.0, end: 2.4, text: "بله." },
+  ];
+  const cues = buildWordCues(ws, {}, 3);
+  assert.deepEqual(cues.map((c) => c.lines), [["سلام"], ["خوبی؟"], ["بله."]]);
+  for (let i = 0; i + 1 < cues.length; i++) assert.ok(cues[i].end <= cues[i + 1].start);
+  assert.ok(cues[1].end - cues[1].start >= 0.3 - 1e-9, "stretched to the minimum when there is room");
+  assert.ok(cues[0].end > cues[0].start && cues[0].end <= 0.12, "never runs into the next word");
+  assert.ok(cues[2].end <= 3);
+});

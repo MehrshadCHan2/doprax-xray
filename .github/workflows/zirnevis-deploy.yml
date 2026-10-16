@@ -1,7 +1,7 @@
-name: Deploy Zirnevis to Hugging Face
+name: Deploy Jcutpersiansub to Hugging Face
 
 # Publishes the in-browser app (zirnevis-web/) as a free static Space:
-# https://huggingface.co/spaces/mehrshadjavid/zirnevis
+# https://huggingface.co/spaces/mehrshadjavid/jcutpersiansub
 # Needs a repository secret HF_TOKEN (a Hugging Face token with "Write" access).
 
 on:
@@ -19,7 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      SPACE_ID: mehrshadjavid/zirnevis
+      SPACE_ID: mehrshadjavid/jcutpersiansub
+      OLD_SPACE_ID: mehrshadjavid/zirnevis
     steps:
       - uses: actions/checkout@v4
 
@@ -51,6 +52,10 @@ jobs:
 
           api = HfApi(token=os.environ["HF_TOKEN"])
           space = os.environ["SPACE_ID"]
+          # The app was renamed; move the old Space once so its link keeps working (HF redirects it).
+          old = os.environ["OLD_SPACE_ID"]
+          if not api.repo_exists(space, repo_type="space") and api.repo_exists(old, repo_type="space"):
+              api.move_repo(old, space, repo_type="space")
           api.create_repo(space, repo_type="space", space_sdk="static", exist_ok=True)
           api.upload_folder(
               repo_id=space,

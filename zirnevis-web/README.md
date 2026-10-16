@@ -1,8 +1,8 @@
 ---
-title: Zirnevis - Persian Subtitles
+title: Jcutpersiansub - Persian Subtitles
 emoji: 🎬
-colorFrom: green
-colorTo: blue
+colorFrom: red
+colorTo: red
 sdk: static
 pinned: false
 license: mit
@@ -13,7 +13,9 @@ custom_headers:
   cross-origin-resource-policy: cross-origin
 ---
 
-# زیرنویس فارسی خودکار (Zirnevis)
+# Jcutpersiansub — زیرنویس فارسی رایگان
+
+ساخته‌ی مهرشاد جاوید · [اینستاگرام @jcutgroup](https://instagram.com/jcutgroup) · [تلگرام @mehrshadcreates](https://t.me/mehrshadcreates)
 
 ویدیو یا صدا را بدهید، زیرنویس فارسی دقیق و تمیز (SRT) بگیرید. رایگان و بدون سرور:
 مدل تشخیص گفتار داخل مرورگر خود کاربر اجرا می‌شود و فایل از دستگاه او خارج نمی‌شود.

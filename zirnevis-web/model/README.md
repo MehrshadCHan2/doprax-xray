@@ -28,7 +28,7 @@ this repository only changes the file format.
   Weights are otherwise unchanged.
 - Tokenizer files come from `openai/whisper-large-v3-turbo` (same vocabulary; the source's files use a newer format).
 
-Used by the [Zirnevis](https://huggingface.co/spaces/mehrshadjavid/zirnevis) Persian subtitle app.
+Used by [Jcutpersiansub](https://huggingface.co/spaces/mehrshadjavid/jcutpersiansub), a free Persian subtitle app by Mehrshad Javid (@jcutgroup).
 
 ```js
 import { WhisperForConditionalGeneration } from "@huggingface/transformers";

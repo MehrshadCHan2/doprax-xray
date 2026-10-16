@@ -3,60 +3,90 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>زیرنویس فارسی خودکار</title>
-  <meta name="description" content="ویدیو یا صدای خود را بدهید و زیرنویس فارسی دقیق و تمیز (SRT) بگیرید. رایگان؛ فایل شما از دستگاهتان خارج نمی‌شود.">
+  <title>زیرنویس فارسی رایگان برای ویدیو — Jcutpersiansub</title>
+  <meta name="description" content="ویدیوت رو بده، زیرنویس فارسی SRT تحویل بگیر. رایگان و بدون ثبت‌نام؛ فایلت از کامپیوترت بیرون نمی‌ره. ساخته‌ی مهرشاد جاوید، جی‌کات.">
+  <meta property="og:title" content="زیرنویس فارسی رایگان برای ویدیو — Jcutpersiansub">
+  <meta property="og:description" content="ویدیوت رو بده، زیرنویس فارسی SRT تحویل بگیر. رایگان و بدون ثبت‌نام. ساخته‌ی مهرشاد جاوید، جی‌کات.">
+  <meta name="theme-color" content="#E11D2E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" crossorigin>
   <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%23E11D2E'/><path d='M38 14v24a10 10 0 0 1-20 0' fill='none' stroke='white' stroke-width='8' stroke-linecap='round'/></svg>">
 </head>
 <body>
   <main>
-    <header>
-      <h1>زیرنویس فارسی خودکار</h1>
-      <p class="lead">ویدیو یا صدای خود را بدهید و زیرنویس فارسی دقیق و تمیز بگیرید. رایگان.</p>
-      <p class="private">🔒 فایل شما از دستگاهتان خارج نمی‌شود؛ همه کار داخل مرورگر خودتان انجام می‌شود.</p>
+    <!-- Hero -->
+    <header class="hero">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 64 64"><path d="M38 14v24a10 10 0 0 1-20 0" /></svg>
+      </div>
+      <h1 class="brand" dir="ltr" data-wave aria-label="Jcutpersiansub">Jcutpersiansub</h1>
+      <p class="tagline">ویدیوت رو بده، زیرنویس فارسی تحویل بگیر.</p>
+      <div class="badges">
+        <span class="badge strong">کاملاً رایگان</span>
+        <span class="badge">بدون ثبت‌نام</span>
+        <span class="badge">ساخته‌ی <b>مهرشاد جاوید</b> · <a href="https://instagram.com/jcutgroup" target="_blank" rel="noopener" dir="ltr">@jcutgroup</a></span>
+      </div>
+      <p class="private">فایلت از کامپیوترت بیرون نمی‌ره. همه‌چی همین‌جا، توی مرورگر خودت ساخته می‌شه.</p>
     </header>
+
+    <!-- Steps -->
+    <ol class="steps">
+      <li><span class="num">۱</span><b>ویدیو رو بذار</b><small>فایل ویدیو یا صدا رو بکش و بنداز این پایین.</small></li>
+      <li class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg></li>
+      <li><span class="num">۲</span><b>بار اول یه کم صبر کن</b><small>هوش مصنوعی یه بار دانلود می‌شه، بعدش آماده‌ست.</small></li>
+      <li class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg></li>
+      <li><span class="num">۳</span><b>SRT رو دانلود کن</b><small>یه نگاه بنداز، اگه لازمه درستش کن و بگیرش.</small></li>
+    </ol>
 
     <div id="warn" class="notice warn" hidden></div>
 
+    <!-- Tool -->
     <section class="card" id="step-file">
-      <h2><span class="n">۱</span> فایل را انتخاب کنید</h2>
       <label id="drop" class="drop" tabindex="0">
         <input id="file" type="file" accept="video/*,audio/*,.mkv,.m4a,.opus" hidden>
-        <span class="drop-icon">⬆</span>
-        <span id="drop-text">ویدیو یا فایل صوتی را اینجا رها کنید یا بزنید تا انتخاب کنید</span>
+        <span class="drop-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0l-5 5m5-5l5 5M4 20h16" /></svg></span>
+        <span id="drop-text">ویدیو یا فایل صوتی رو بکش و بنداز این‌جا، یا بزن تا انتخابش کنی</span>
       </label>
+
+      <fieldset class="mode">
+        <legend>سبک زیرنویس</legend>
+        <label><input type="radio" name="mode" value="lines" checked> <span><b>جمله‌ای</b><small>معمولی، برای یوتیوب و فیلم</small></span></label>
+        <label><input type="radio" name="mode" value="words"> <span><b>کلمه به کلمه</b><small>هر کلمه جدا، برای ریلز و شورتس</small></span></label>
+      </fieldset>
+
       <details class="settings">
-        <summary>تنظیمات (اختیاری)</summary>
+        <summary>تنظیمات بیشتر</summary>
         <div class="row">
-          <span>شکل اعداد:</span>
+          <span>عددها:</span>
           <label><input type="radio" name="digits" value="fa" checked> فارسی (۱۲۳)</label>
           <label><input type="radio" name="digits" value="en"> انگلیسی (123)</label>
         </div>
         <div class="row">
-          <label for="chars">حداکثر حرف در هر خط: <b id="chars-out">۴۲</b></label>
+          <label for="chars">حداکثر حرف توی هر خط: <b id="chars-out">۴۲</b></label>
           <input id="chars" type="range" min="30" max="50" value="42">
         </div>
         <div class="row">
           <label><input id="bom" type="checkbox" checked> سازگاری با پخش‌کننده‌های قدیمی ویندوز</label>
         </div>
       </details>
+
       <button id="go" class="primary" disabled>ساخت زیرنویس</button>
       <div id="status" class="status" aria-live="polite"></div>
       <div id="bar" class="bar" hidden><div></div></div>
     </section>
 
+    <!-- Result -->
     <section class="card" id="step-result" hidden>
-      <h2><span class="n">۲</span> ببینید، اصلاح کنید، دانلود کنید</h2>
+      <h2>ببین، درستش کن، دانلودش کن</h2>
       <video id="player" controls playsinline></video>
       <div class="downloads">
         <a id="dl-srt" class="primary button" download>دانلود SRT</a>
         <a id="dl-vtt" class="button" download>VTT</a>
         <a id="dl-txt" class="button" download>متن ساده</a>
       </div>
-      <p class="hint">فایل <b>SRT</b> برای VLC، پریمیر، کپ‌کات و یوتیوب است. اگر کلمه‌ای اشتباه است، همین پایین درستش کنید؛ فایل‌ها خودکار به‌روز می‌شوند. روی زمان هر ردیف بزنید تا ویدیو به همان‌جا برود.</p>
+      <p class="hint">فایل <b>SRT</b> رو می‌تونی توی پریمیر، کپ‌کات، VLC و یوتیوب بذاری. اگه کلمه‌ای اشتباهه، همین پایین درستش کن؛ فایل‌ها خودشون به‌روز می‌شن. روی «پخش» بزن تا ویدیو بره همون‌جا.</p>
       <div class="table-wrap">
         <table id="cues">
           <thead><tr><th>#</th><th>زمان</th><th>متن</th></tr></thead>
@@ -65,9 +95,47 @@
       </div>
     </section>
 
+    <!-- Caution -->
+    <aside class="notice caution">
+      <b>قبل از انتشار، یه بار چکش کن</b>
+      <p>توی تست‌های ما، با صدای تمیز حدود ۱۰ درصد کلمه‌ها اشتباه نوشته شدن. با صدای شلوغ و پرنویز این عدد بیشتره. اسم‌ها و کلمه‌های انگلیسی بیشتر از بقیه اشتباه می‌شن.</p>
+    </aside>
+
+    <!-- How it works -->
+    <section class="card tips">
+      <h2>چطوری کار می‌کنه؟</h2>
+      <ul>
+        <li><b>روی کامپیوتر خودت اجرا می‌شه.</b> هوش مصنوعی توی مرورگرت کار می‌کنه، نه روی سرور. برای همین رایگانه و فایلت جایی آپلود نمی‌شه.</li>
+        <li><b>بار اول یه دانلود بزرگ داره.</b> بسته به کامپیوترت ۶۰۰ مگابایت تا ۱ گیگ دانلود می‌شه. مرورگر نگهش می‌داره و دفعه‌ی بعد دیگه دانلود نمی‌خواد.</li>
+        <li><b>سرعتش به کامپیوترت بستگی داره.</b> با کارت گرافیک خیلی سریعه. بدون کارت گرافیک، هر دقیقه ویدیو ممکنه چند دقیقه طول بکشه.</li>
+        <li><b>بهترین انتخاب: کروم یا اج جدید روی لپ‌تاپ یا کامپیوتر.</b> روی موبایل ممکنه خیلی کند باشه یا اصلاً کار نکنه.</li>
+        <li><b>تا تموم نشده، این صفحه رو نبند.</b> اگه ببندیش، کار از اول شروع می‌شه.</li>
+        <li><b>صدای تمیز یعنی زیرنویس دقیق‌تر.</b> موزیک بلند یا چند نفر که هم‌زمان حرف می‌زنن، دقت رو پایین میارن.</li>
+        <li><b>برای ریلز و شورتس</b> سبک «کلمه به کلمه» رو انتخاب کن تا هر کلمه جدا روی تصویر بیاد.</li>
+      </ul>
+    </section>
+
+    <!-- Socials -->
     <footer>
-      مدل تشخیص گفتار: <a href="https://huggingface.co/givia/whisper-large-v3-turbo-persian" target="_blank" rel="noopener">whisper-large-v3-turbo-persian</a>
-      (CC-BY-4.0) بر پایه Whisper از OpenAI · اجرا با <a href="https://huggingface.co/docs/transformers.js" target="_blank" rel="noopener">Transformers.js</a>
+      <p class="made">ساخته‌ی <b>مهرشاد جاوید</b> · گروه جی‌کات</p>
+      <nav class="socials" aria-label="شبکه‌های اجتماعی">
+        <a href="https://instagram.com/jcutgroup" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.6" class="dot" /></svg>
+          <span>اینستاگرام <bdi dir="ltr">@jcutgroup</bdi></span>
+        </a>
+        <a href="https://t.me/mehrshadcreates" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4L3 11l6 2.2M21 4l-3 16-9-6.8M21 4L9 13.2V19l3.4-3.3" /></svg>
+          <span>تلگرام <bdi dir="ltr">@mehrshadcreates</bdi></span>
+        </a>
+        <a href="https://jcutgroup.com" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18" /></svg>
+          <span>سایت <bdi dir="ltr">jcutgroup.com</bdi></span>
+        </a>
+      </nav>
+      <p class="credit">
+        مدل تشخیص گفتار: <a href="https://huggingface.co/givia/whisper-large-v3-turbo-persian" target="_blank" rel="noopener">whisper-large-v3-turbo-persian</a>
+        (CC-BY-4.0) بر پایه Whisper از OpenAI · اجرا با <a href="https://huggingface.co/docs/transformers.js" target="_blank" rel="noopener">Transformers.js</a>
+      </p>
     </footer>
   </main>
   <script type="module" src="app.js"></script>
