@@ -30,7 +30,8 @@ clip ─WebAudio→ 16 kHz mono ─energy VAD (adaptive noise floor)→ speech p
      ─Whisper turbo Persian fine-tune (ONNX, WebGPU q4f16 / WASM q8, Transformers.js)
        plain-text decoding + cross-attention word alignment → timed words
      ─Persian cleanup (ی/ک, digits, «می‌», «‌ها», punctuation, junk/loop filter)
-     ─subtitle rules (≤42 chars × 2 lines, ≤6 s, breaks at punctuation/conjunctions/pauses)
+     ─subtitle rules (≤42 chars × 2 lines, ≤6 s, breaks at punctuation/conjunctions/pauses),
+       or one cue per word in "word by word" mode (Reels/Shorts)
      ─SRT/VTT with RLM marks so punctuation sits on the correct side in every player
 ```
 
