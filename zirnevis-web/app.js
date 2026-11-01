@@ -93,19 +93,28 @@ function startWorker(device) {
   state.ready = false;
   state.worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
   const files = new Map();
+  let saved = false;
   return new Promise((resolve, reject) => {
     state.worker.onmessage = ({ data }) => {
-      if (data.type === "download" && data.status === "progress" && data.total) {
+      if (data.type === "cache") {
+        saved = data.saved;
+        if (saved) say("هوش مصنوعی قبلاً روی همین مرورگر ذخیره شده؛ بدون دانلود باز می‌شه…", "", true);
+      } else if (data.type === "download" && data.status === "progress" && data.total) {
         files.set(data.file, data);
         const loaded = [...files.values()].reduce((s, f) => s + f.loaded, 0);
         const total = [...files.values()].reduce((s, f) => s + f.total, 0);
-        say(`داره هوش مصنوعی رو دانلود می‌کنه (فقط بار اول): ${mb(loaded)} از ${mb(total)} مگابایت…`, "", true);
+        say(saved
+          ? `داره هوش مصنوعی رو از حافظه‌ی مرورگر باز می‌کنه (بدون دانلود): ${faNum(Math.round((loaded / total) * 100))}٪`
+          : `داره هوش مصنوعی رو دانلود می‌کنه (فقط بار اول): ${mb(loaded)} از ${mb(total)} مگابایت…`, "", true);
         progress(loaded / total);
       } else if (data.type === "download" && data.status === "ready") {
         say("داره هوش مصنوعی رو آماده می‌کنه…", "", true);
       } else if (data.type === "ready") {
         state.ready = true;
         state.device = data.device;
+        state.kept = data.kept;
+        // Ask the browser to keep the saved model when space runs low (otherwise it may quietly delete it).
+        navigator.storage?.persist?.().catch(() => {});
         resolve();
       } else if (data.type === "error" && !state.ready) {
         reject(new Error(data.message));
@@ -182,7 +191,8 @@ ui.go.addEventListener("click", async () => {
     }
     progress(null);
     if (!state.cues.length) say("توی این فایل حرف فارسی پیدا نشد.", "warn");
-    else say(`✅ آماده‌ست! ${faNum(state.cues.length)} زیرنویس در ${faNum(Math.round(took))} ثانیه. حالا ببین، اگه لازمه درستش کن و دانلودش کن.`);
+    else say(`✅ آماده‌ست! ${faNum(state.cues.length)} زیرنویس در ${faNum(Math.round(took))} ثانیه. حالا ببین، اگه لازمه درستش کن و دانلودش کن.`
+      + (state.kept === false ? "<br><small>مرورگرت اجازه نداد هوش مصنوعی ذخیره بشه (پنجره‌ی ناشناس یا فضای کم)، پس دفعه‌ی بعد دوباره دانلود می‌شه.</small>" : ""));
   } catch (err) {
     progress(null);
     say(`⚠️ ${err.message}`, "error");
